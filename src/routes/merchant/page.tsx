@@ -136,7 +136,7 @@ export default function ProductList() {
       >
         <h3>创建商品</h3>
         <div style={{ margin: '10px 0' }}>
-          <label htmlFor=''>商户ID：</label>
+          <label htmlFor="">商户ID：</label>
           <input
             type="text"
             value={merchantId || ''}
@@ -146,7 +146,7 @@ export default function ProductList() {
           />
         </div>
         <div style={{ margin: '10px 0' }}>
-          <label htmlFor=''>商品名称：</label>
+          <label htmlFor="">商品名称：</label>
           <input
             type="text"
             value={form.name}
@@ -156,7 +156,7 @@ export default function ProductList() {
           />
         </div>
         <div style={{ margin: '10px 0' }}>
-          <label htmlFor=''>扩展描述：</label>
+          <label htmlFor="">扩展描述：</label>
           <input
             type="text"
             value={form.ext.desc}

@@ -1,11 +1,7 @@
 import { Link, useNavigate } from '@modern-js/runtime/router';
-import { useState } from 'react';
-import type {
-  GenerateCaptchaParams,
-  RegisterForm,
-  RegisterParams,
-} from 'api';
+import type { GenerateCaptchaParams, RegisterForm, RegisterParams } from 'api';
 import { authAPI } from 'api';
+import { useState } from 'react';
 
 export default function Register() {
   const navigate = useNavigate();

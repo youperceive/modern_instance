@@ -11,8 +11,6 @@ export function updateGlobalAuth() {
   globalIsLogin = !!localStorage.getItem('user_token');
   // 触发自定义事件，通知Layout更新按钮
   window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT));
-
-  console.log("updateglobal")
 }
 
 // 4. 导出监听状态变化的方法（给Layout用）

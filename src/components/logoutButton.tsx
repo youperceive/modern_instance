@@ -1,7 +1,7 @@
+import { updateGlobalAuth } from '@/util/globalAuth';
 // src/components/LogoutButton.tsx（独立组件，便于复用）
 import { useNavigate } from '@modern-js/runtime/router';
 import { useState } from 'react';
-import { updateGlobalAuth } from '@/util/globalAuth';
 
 // 退出登录按钮组件（顶栏专用）
 export default function LogoutButton() {
