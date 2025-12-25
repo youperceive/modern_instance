@@ -1,151 +1,71 @@
-import { Link } from '@modern-js/runtime/router';
-import { productAPI } from 'api';
-import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from '@modern-js/runtime/router';
+// src/routes/index.tsx（根路由-JWT解析版）
+import { useEffect } from 'react';
 
-// 1. 定义极简接口（替换 any，仅保留用到的字段）
-interface Product {
-  id: number;
-  name: string;
-  ext: {
-    desc: string;
-  };
-}
+// 简易JWT解析函数（测试阶段：仅解码payload，不验证签名）
+export const parseJwt = (token: string) => {
+  try {
+    // JWT结构：header.payload.signature → 解码payload部分
+    const base64Url = token.split('.')[1];
+    // 处理base64补位（URL安全的base64可能缺少=）
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => {
+          const hex = c.charCodeAt(0).toString(16).padStart(2, '0');
+          return `%${hex}`;
+        })
+        .join(''),
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    // 解析失败（token格式错误/篡改）返回null
+    return null;
+  }
+};
 
-interface CreateProductForm {
-  merchant_id: number;
-  name: string;
-  ext: {
-    desc: string;
-  };
-}
-
-// 根路由：商品列表（对应 /）
-export default function ProductList() {
-  // 2. 替换 any[] 为 Product[]
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  // 3. 给 form 声明类型（替换隐式 any）
-  const [form, setForm] = useState<CreateProductForm>({
-    merchant_id: 1001,
-    name: '',
-    ext: { desc: '' },
-  });
-
-  // 加载商品列表
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await productAPI.listProduct({
-        merchant_id: 1001,
-        page_num: 1,
-        page_size: 20,
-      });
-      const data = res.data as { products: Product[] };
-      setProducts(data.products || []);
-    } catch (e) {
-      alert(`加载商品失败：${e instanceof Error ? e.message : '未知错误'}`);
-    } finally {
-      setLoading(false);
-    }
-  }, []); // fetchProducts 无外部依赖，依赖数组为空
-
-  // 创建商品
-  const handleCreate = async () => {
-    if (!form.name) return alert('商品名称不能为空');
-    try {
-      await productAPI.createProduct(form);
-      alert('创建成功');
-      fetchProducts();
-      setForm({ ...form, name: '', ext: { desc: '' } });
-    } catch (e) {
-      alert("创建失败：${e instanceof Error ? e.message : '未知错误'}");
-    }
-  };
-
-  // 删除商品
-  const handleDelete = async (productId: number) => {
-    if (!confirm('确认删除？')) return;
-    try {
-      await productAPI.deleteProduct({
-        merchant_id: 1001,
-        product_id: productId,
-      });
-      alert('删除成功');
-      fetchProducts();
-    } catch (e) {
-      alert("删除失败：${e instanceof Error ? e.message : '未知错误'}");
-    }
-  };
+export default function RootRedirect() {
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    const handleRedirect = () => {
+      // 1. 获取本地存储的user_token
+      const userToken = localStorage.getItem('user_token');
 
-  return (
-    <div>
-      <h1>商户商品管理（仅功能，无样式）</h1>
+      // 2. 无token → 跳登录
+      if (!userToken) {
+        navigate('/login', { replace: true });
+        return;
+      }
 
-      {/* 创建商品表单 */}
-      <div>
-        <h3>创建商品</h3>
-        <div>
-          <label htmlFor="">商品名称：</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="输入商品名称"
-          />
-        </div>
-        <div>
-          <label htmlFor="">扩展描述：</label>
-          <input
-            type="text"
-            value={form.ext.desc}
-            onChange={e =>
-              setForm({ ...form, ext: { ...form.ext, desc: e.target.value } })
-            }
-            placeholder="输入商品描述"
-          />
-        </div>
-        <button type="button" onClick={handleCreate}>
-          创建商品
-        </button>
-      </div>
+      // 3. 解析JWT的payload
+      const payload = parseJwt(userToken);
+      // 解析失败（token无效）→ 清空token，跳登录
+      if (!payload) {
+        localStorage.removeItem('user_token'); // 清理无效token
+        alert('登录状态失效，请重新登录');
+        navigate('/login', { replace: true });
+        return;
+      }
 
-      {/* 商品列表 */}
-      <div>
-        <h3>商品列表</h3>
-        {loading ? (
-          <div>加载中...</div>
-        ) : (
-          <div>
-            {products.length === 0 ? (
-              <div>暂无商品</div>
-            ) : (
-              products.map(item => (
-                <div
-                  key={item.id}
-                  style={{ margin: '10px 0', borderBottom: '1px solid #eee' }}
-                >
-                  <div>ID：{item.id}</div>
-                  <div>名称：{item.name}</div>
-                  <div>描述：{item.ext.desc || '无'}</div>
-                  <button type="button" onClick={() => handleDelete(item.id)}>
-                    删除
-                  </button>
-                  <Link to={`/sku/${item.id}`}>查看SKU</Link>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+      // 4. 提取user_type（处理可能的字段缺失/类型错误）
+      const userType = payload.user_type ?? payload.userType ?? 0; // 兼容驼峰/蛇形命名
+      const userTypeNum = Number(userType); // 确保是数字
 
-      {/* 跳转到扣减库存页 */}
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/deduct">订单端-扣减SKU库存</Link>
-      </div>
-    </div>
-  );
+      // 5. 根据user_type跳转
+      if (userTypeNum === 2) {
+        // 商家端（可替换为/merchant/product）
+        navigate('/merchant', { replace: true });
+      } else {
+        // 客户端
+        navigate('/customer', { replace: true });
+      }
+    };
+
+    handleRedirect();
+  }, [navigate]);
+
+  // 测试阶段的提示文本（无样式）
+  return <div>验证登录状态中...</div>;
 }
