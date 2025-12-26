@@ -52,9 +52,14 @@ export default function Login() {
     setLoading(true);
     try {
       // 组装登录参数（匹配后端user_account.LoginRequest，蛇形命名和Register保持一致）
+
+      // 依旧是转换 targetType
+
+      const targetType = form.targetType === 1 ? 2 : 1;
+
       const submitData: LoginParams = {
         target: form.target, // 手机号/邮箱（对应后端Target）
-        target_type: form.targetType, // 登录方式类型（1=手机，2=邮箱）
+        target_type: targetType, // 登录方式类型（1=手机，2=邮箱）
         password: form.password, // 密码
       };
 

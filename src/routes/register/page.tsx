@@ -119,11 +119,17 @@ export default function Register() {
 
     setLoading(true);
     try {
+      /*
+        实际上是反过来的，所以 registerType 需要更改 1 <-> 2
+      */
+
+      const registerType = form.registerType === 1 ? 2 : 1;
+
       // 组装注册参数（匹配后端user_account.RegisterRequest）
       const submitData: RegisterParams = {
         username: form.username,
         target: form.target, // 手机号/邮箱（和验证码Target一致）
-        target_type: form.registerType, // 注册方式类型（1=手机，2=邮箱）
+        target_type: registerType, // 注册方式类型（1=手机，2=邮箱）
         password: form.password,
         captcha: form.captcha,
         user_type: form.userType, // 1=普通，2=商户

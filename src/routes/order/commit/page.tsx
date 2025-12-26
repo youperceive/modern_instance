@@ -1,7 +1,7 @@
 // src/routes/order/commit/page.tsx
 import { useLocation, useNavigate } from '@modern-js/runtime/router';
-// 导入订单API（需确保已按之前的规范封装）
-import { orderAPI } from 'api';
+// 1. 新增导入 skuAPI（对齐项目现有接口）
+import { orderAPI, skuAPI } from 'api';
 import { useEffect, useState } from 'react';
 
 // 定义跳转传递的参数类型（对齐CustomerPage的state）
@@ -56,7 +56,7 @@ export default function OrderCommitPage() {
     setErrorMsg('');
   };
 
-  // 5. 创建订单核心函数
+  // 5. 创建订单核心函数（新增库存扣减逻辑）
   const handleCreateOrder = async () => {
     // 前置参数校验
     if (
@@ -98,20 +98,51 @@ export default function OrderCommitPage() {
         },
       };
 
+      // 第一步：创建订单
       const res = await orderAPI.createOrder(createParams);
       const baseResp = res.data.baseResp || {};
 
       if (baseResp.code === 0) {
-        // 创建成功：提示并跳转到订单详情页（可替换为你的订单详情路由）
-        alert(`订单创建成功！订单ID：${res.data.order_id}`);
-        navigate('/order/detail', {
-          state: { orderId: res.data.order_id },
-        });
+        const orderId = res.data.order_id;
+        // 第二步：订单创建成功 → 扣减SKU库存（严格对齐DeductSkuStockParams类型）
+        try {
+          const deductRes = await skuAPI.deductSkuStock({
+            sku_id: orderState.skuId, // 对应DeductSkuStockParams的sku_id
+            count: count, // 对应DeductSkuStockParams的count（购买数量）
+          });
+          const deductBaseResp = deductRes.data.BaseResp || {};
+
+          if (deductBaseResp.code !== 0) {
+            // 库存扣减失败：提示用户（订单已创建，需人工处理库存）
+            throw new Error(
+              `订单创建成功，但库存扣减失败：${deductBaseResp.msg || '未知错误'}`,
+            );
+          }
+
+          // 订单+库存都成功：提示并跳转
+          alert(`订单创建成功！订单ID：${orderId}，库存已扣减`);
+          navigate('/order/detail', {
+            state: { orderId: orderId },
+          });
+        } catch (deductErr) {
+          // 库存扣减异常处理
+          const deductErrMsg =
+            deductErr instanceof Error ? deductErr.message : '库存扣减异常';
+          setErrorMsg(deductErrMsg);
+          console.error(`订单${orderId}库存扣减失败：`, deductErr);
+          // 订单已创建，仅提示，仍跳转到订单详情页
+          alert(
+            `订单创建成功（订单ID：${orderId}），但${deductErrMsg}，请联系管理员处理库存`,
+          );
+          navigate('/order/detail', {
+            state: { orderId: orderId },
+          });
+        }
       } else {
         setErrorMsg(`创建失败：${baseResp.msg || '未知错误'}`);
       }
     } catch (e) {
-      // 网络/接口错误处理
+      // 订单创建异常处理
       setErrorMsg(
         `创建订单失败：${e instanceof Error ? e.message : '网络异常'}`,
       );
@@ -121,7 +152,7 @@ export default function OrderCommitPage() {
     }
   };
 
-  // 6. 页面渲染（参数缺失时展示提示）
+  // 6. 页面渲染（无修改，保持原有逻辑）
   if (!orderState || !orderState.productId || !orderState.skuId) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
