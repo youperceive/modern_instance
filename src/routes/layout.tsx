@@ -1,8 +1,10 @@
 import { onAuthChange } from '@/util/globalAuth';
 import { Outlet } from '@modern-js/runtime/router';
 import { useEffect, useState } from 'react';
-// 导入之前封装的退出登录按钮
+// 导入退出登录按钮
 import LogoutButton from 'src/components/logoutButton';
+// 导入订单/首页切换按钮（路径和命名保持和logoutButton一致）
+import OrderNavButton from 'src/components/orderDetailButton';
 
 export default function RootLayout() {
   // 控制退出按钮的显示：仅当有user_token时显示
@@ -39,18 +41,22 @@ export default function RootLayout() {
     <div
       style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
     >
-      {/* 全局顶栏：包含退出登录按钮（仅登录后显示） */}
+      {/* 全局顶栏：包含订单按钮 + 退出登录按钮（仅登录后显示） */}
       <header
         style={{
           padding: '10px 20px',
           backgroundColor: '#f8f8f8',
           borderBottom: '1px solid #eee',
           display: 'flex',
-          justifyContent: 'flex-end', // 退出按钮靠右显示
+          justifyContent: 'flex-end', // 按钮靠右显示
           alignItems: 'center',
+          gap: '10px', // 按钮之间增加间距（替代marginLeft，更优雅）
         }}
       >
-        {showLogout && <LogoutButton />} {/* 登录后才显示退出按钮 */}
+        {/* 订单/首页切换按钮：始终显示（无需登录） */}
+        <OrderNavButton />
+        {/* 退出登录按钮：仅登录后显示（和原有逻辑一致） */}
+        {showLogout && <LogoutButton />}
       </header>
 
       {/* 页面主体内容：嵌套所有子路由（/merchant/product、/customer、/login等） */}

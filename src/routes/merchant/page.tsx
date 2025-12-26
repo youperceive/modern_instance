@@ -121,10 +121,10 @@ export default function ProductList() {
       {/* 简化标题：去掉测试字样 */}
       <h1>商户 {merchantId || '未知'} 商品管理</h1>
 
-      {/* 新增：跳转到商户列表页面（打通路由） */}
+      {/* 新增：跳转到商户列表页面（打通路由）
       <div style={{ marginBottom: '20px' }}>
         <Link to="/merchants">查看所有商户</Link>
-      </div>
+      </div> */}
 
       {/* 创建商品表单（简化样式，保留核心） */}
       <div
@@ -209,10 +209,10 @@ export default function ProductList() {
         )}
       </div>
 
-      {/* 保留扣减库存跳转，新增间距 */}
+      {/* 保留扣减库存跳转，新增间距
       <div style={{ marginTop: '20px' }}>
         <Link to="/deduct">订单端-扣减SKU库存</Link>
-      </div>
+      </div> */}
     </div>
   );
 }

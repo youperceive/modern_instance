@@ -1,3 +1,4 @@
+import { useNavigate } from '@modern-js/runtime/router';
 import { productAPI, skuAPI } from 'api';
 import { type Merchant, merchantAPI } from 'api';
 import { useCallback, useEffect, useState } from 'react';
@@ -21,6 +22,8 @@ interface Sku {
 }
 
 export default function CustomerPage() {
+  const navigate = useNavigate();
+
   // 核心状态（无修改）
   const [merchantList, setMerchantList] = useState<Merchant[]>([]);
   const [selectedMerchantId, setSelectedMerchantId] = useState<number | null>(
@@ -96,7 +99,7 @@ export default function CustomerPage() {
     [selectedMerchantId],
   );
 
-  // 点击回调逻辑（无修改）
+  // 点击回调逻辑（仅恢复：只加载SKU，不跳转）
   const handleSelectMerchant = (merchantId: number) => {
     setSelectedMerchantId(merchantId);
     setSelectedProductId(null);
@@ -104,9 +107,28 @@ export default function CustomerPage() {
     fetchProductsByMerchant(merchantId);
   };
 
+  // 核心修改1：商品点击仅加载SKU，移除跳转逻辑
   const handleSelectProduct = (productId: number) => {
     setSelectedProductId(productId);
-    fetchSkuByProduct(productId);
+    fetchSkuByProduct(productId); // 仅加载该商品的SKU列表
+  };
+
+  // 核心修改2：新增SKU下单函数
+  const handleOrderSku = (sku: Sku) => {
+    // 获取当前商品名称
+    const productName = products.find(p => p.id === sku.product_id)?.name || '';
+    // 跳转到订单确认页，传递选中的SKU信息
+    navigate('/order/commit', {
+      state: {
+        productId: sku.product_id,
+        productName,
+        skuId: sku.id,
+        skuCode: sku.sku_code,
+        price: sku.price,
+        stock: sku.stock,
+        merchantId: selectedMerchantId,
+      },
+    });
   };
 
   // 挂载逻辑（无修改）
@@ -118,7 +140,7 @@ export default function CustomerPage() {
     <div style={{ padding: '20px' }}>
       <h1>商户商品查询</h1>
 
-      {/* 商户列表：核心修改按钮内部布局 + 样式 */}
+      {/* 商户列表：无修改 */}
       <div
         style={{
           marginBottom: '20px',
@@ -171,7 +193,7 @@ export default function CustomerPage() {
         )}
       </div>
 
-      {/* 商品列表 + SKU列表：无修改 */}
+      {/* 商品列表：无修改 */}
       {selectedMerchantId ? (
         <div
           style={{
@@ -225,6 +247,7 @@ export default function CustomerPage() {
         <div style={{ color: '#999' }}>请选择左侧商户，查看其商品列表</div>
       )}
 
+      {/* SKU列表：仅新增下单按钮，其他无修改 */}
       {selectedProductId ? (
         <div>
           <h3>商品 {selectedProductId} 的规格（SKU）</h3>
@@ -247,12 +270,35 @@ export default function CustomerPage() {
                     margin: '5px 0',
                     padding: '5px',
                     borderBottom: '1px solid #f5f5f5',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  <div>规格ID：{sku.id}</div>
-                  <div>规格编码：{sku.sku_code}</div>
-                  <div>库存：{sku.stock} 件</div>
-                  <div>价格：¥{(sku.price / 100).toFixed(2)}</div>
+                  {/* 原有SKU信息展示 */}
+                  <div>
+                    <div>规格ID：{sku.id}</div>
+                    <div>规格编码：{sku.sku_code}</div>
+                    <div>库存：{sku.stock} 件</div>
+                    <div>价格：¥{(sku.price / 100).toFixed(2)}</div>
+                  </div>
+                  {/* 新增下单按钮 */}
+                  <button
+                    type="button"
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#1890ff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: sku.stock <= 0 ? 'not-allowed' : 'pointer',
+                      opacity: sku.stock <= 0 ? 0.6 : 1,
+                    }}
+                    onClick={() => handleOrderSku(sku)}
+                    disabled={sku.stock <= 0}
+                  >
+                    {sku.stock <= 0 ? '库存不足' : '立即下单'}
+                  </button>
                 </div>
               ))}
             </div>

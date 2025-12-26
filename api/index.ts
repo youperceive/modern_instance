@@ -10,6 +10,26 @@ const request = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+request.interceptors.request.use(
+  config => {
+    // 1. 读取localStorage里的user_token
+    const token = localStorage.getItem('user_token') || '';
+    console.log('🚀 准备传递的Token：', token); // 控制台打印，确认Token非空
+
+    // 2. 核心：把Token加到请求头（字段名必须是user_token，和后端一致）
+    if (token) {
+      config.headers.user_token = token;
+    }
+
+    return config;
+  },
+  error => {
+    console.error('请求拦截器错误：', error);
+    return Promise.reject(error);
+  },
+);
+
 // ========== 登录相关类型（和Register的类型风格对齐） ==========
 export interface LoginForm {
   targetType: number; // 1=手机，2=邮箱
@@ -167,3 +187,117 @@ export const merchantAPI = {
 //   code: number;
 //   msg: string;
 // }
+export interface OrderItem {
+  product_id: number; // 原ProductID → product_id
+  sku_id: number; // 原SkuID → sku_id
+  count: number; // 原Count → count
+  price: number; // 原Price → price
+  ext?: Record<string, string>; // 原Ext → ext
+}
+
+export interface CreateOrderParams {
+  type: number; // 原Type → type
+  status: number; // 原Status → status
+  resp_user_id?: number; // 原RespUserID → resp_user_id
+  items: OrderItem[]; // 原Items → items
+  ext?: Record<string, string>; // 原Ext → ext
+}
+
+export interface CreateOrderResponse {
+  baseResp: {
+    code: number;
+    msg: string;
+  };
+  order_id?: string;
+}
+
+/** QueryOrderIdType枚举（IDL：1=REQ_USER 发起人，2=RESP_USER 接收人） */
+export enum QueryOrderIdType {
+  REQ_USER = 1,
+  RESP_USER = 2,
+}
+
+/** 查询订单ID列表请求参数（下划线命名，对齐API） */
+export interface QueryOrderIdParams {
+  type: QueryOrderIdType;
+  user_id?: number; // REQ_USER/RESP_USER场景必填，非负
+  ext_key?: string; // EXT_KEY场景必填
+  ext_val?: string; // EXT_KEY场景必填
+  page?: number; // 默认1，≥1
+  page_size?: number; // 默认20，1≤page_size≤100
+}
+
+/** 查询订单ID列表响应（下划线命名，对齐API） */
+export interface QueryOrderIdResponse {
+  baseResp: {
+    code: number;
+    msg: string;
+  };
+  order_id: string[]; // 订单ID列表（MongoDB ObjectID字符串）
+  total: number; // 总订单数
+  page: number;
+  page_size: number;
+}
+
+/** 订单商品明细（下划线命名，对齐API） */
+export interface OrderItem {
+  product_id: number;
+  sku_id: number;
+  count: number;
+  price: number;
+  ext?: Record<string, string>;
+}
+
+/** 订单详情（下划线命名，对齐API） */
+export interface Order {
+  id: string; // MongoDB ObjectID字符串
+  type: number;
+  status: number;
+  req_user_id: number; // 发起人ID（下划线）
+  resp_user_id: number; // 接收人ID（下划线）
+  items: OrderItem[]; // 商品明细
+  created_at: string; // 时间字符串（下划线）
+  updated_at: string; // 时间字符串（下划线）
+  ext?: Record<string, string>;
+}
+
+/** 查询订单详情请求参数（下划线命名，对齐API） */
+export interface QueryOrderInfoParams {
+  id: string; // 订单ID（MongoDB ObjectID字符串）
+}
+
+/** 查询订单详情响应（下划线命名，对齐API） */
+export interface QueryOrderInfoResponse {
+  baseResp: {
+    code: number;
+    msg: string;
+  };
+  order: Order;
+}
+
+export const orderAPI = {
+  createOrder: (data: CreateOrderParams) =>
+    request.post<CreateOrderResponse>('/create', data),
+  // 查询订单ID列表（新增，仿照createOrder风格）
+  queryOrderId: (data: QueryOrderIdParams) =>
+    request.post<QueryOrderIdResponse>('/query_order_id', data),
+  // 查询订单详情（新增，仿照createOrder风格）
+  queryOrderInfo: (data: QueryOrderInfoParams) =>
+    request.post<QueryOrderInfoResponse>('/query_order_info', data),
+};
+
+export interface CreateOrderParams {
+  type: number;
+  status: number;
+  resp_user_id?: number;
+  items: OrderItem[];
+  ext?: Record<string, string>;
+}
+
+export interface CreateOrderResponse {
+  baseResp: {
+    code: number;
+    msg: string;
+  };
+  order_id?: string;
+}
