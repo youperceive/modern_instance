@@ -162,7 +162,7 @@ export default function Register() {
   // ========== 6. 渲染：极简样式，逻辑清晰 ==========
   return (
     <div style={{ padding: '20px', maxWidth: '450px', margin: '0 auto' }}>
-      <h1>用户注册（测试用）</h1>
+      <h1>用户注册</h1>
 
       {/* 1. 注册方式选择（手机/邮箱） */}
       <div style={{ margin: '10px 0' }}>

@@ -97,7 +97,7 @@ export default function Login() {
   // ========== 5. 渲染：和Register完全一致的极简样式、布局结构 ==========
   return (
     <div style={{ padding: '20px', maxWidth: '450px', margin: '0 auto' }}>
-      <h1>用户登录（测试用）</h1>
+      <h1>用户登录</h1>
 
       {/* 1. 登录方式选择（手机/邮箱） */}
       <div style={{ margin: '10px 0' }}>
